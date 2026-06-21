@@ -1,0 +1,185 @@
+import type { Doc, ReviewEntry } from "./types";
+
+// Deterministic fictional sample data. No real people. "Embeddings precomputed" is simulated
+// via keyword retrieval in lib/ai.ts so the demo needs no live AI calls.
+
+export const SEED_DOCS: Doc[] = [
+  {
+    id: "doc-imm-001",
+    name: "Intake — Marisol Vega (I-485).pdf",
+    type: "Immigration Intake",
+    status: "ready",
+    owner: "demo",
+    createdAt: "2026-06-14T15:20:00Z",
+    pages: 3,
+    chunks: [
+      { id: "c1", page: 1, text: "Applicant Full Name: Marisol Vega. Date of Birth: 1991-04-12. Country of Birth: Mexico. Current Country of Residence: United States." },
+      { id: "c2", page: 1, text: "Alien Registration Number (A-Number): A-208-441-905. Application Type: I-485 Adjustment of Status. Priority Date: 2019-11-03." },
+      { id: "c3", page: 2, text: "Contact: marisol.vega@example.com, phone (312) 555-0183. Mailing address: 1144 W Hubbard St, Chicago, IL 60642." },
+      { id: "c4", page: 3, text: "Prior entries: entered the U.S. on a F-1 student visa in 2014; changed to H-1B in 2018. No prior removal proceedings reported." },
+    ],
+    extractions: [
+      { id: "e1", field: "Full Name", value: "Marisol Vega", confidence: 0.99, sourceChunkId: "c1", status: "auto" },
+      { id: "e2", field: "Date of Birth", value: "1991-04-12", confidence: 0.98, sourceChunkId: "c1", status: "auto" },
+      { id: "e3", field: "A-Number", value: "A-208-441-905", confidence: 0.97, sourceChunkId: "c2", status: "auto" },
+      { id: "e4", field: "Application Type", value: "I-485", confidence: 0.96, sourceChunkId: "c2", status: "auto" },
+      { id: "e5", field: "Priority Date", value: "2019-11-03", confidence: 0.93, sourceChunkId: "c2", status: "auto" },
+      { id: "e6", field: "Email", value: "marisol.vega@example.com", confidence: 0.99, sourceChunkId: "c3", status: "auto" },
+    ],
+    qa: [
+      { id: "q1", question: "What visa did the applicant originally enter on?", answer: "The applicant first entered the U.S. on an F-1 student visa in 2014, then changed status to H-1B in 2018.", citations: ["c4"], confidence: 0.94 },
+    ],
+  },
+  {
+    id: "doc-imm-002",
+    name: "Intake — Daniel Okonkwo (I-130).pdf",
+    type: "Immigration Intake",
+    status: "needs_review",
+    owner: "demo",
+    createdAt: "2026-06-15T18:02:00Z",
+    pages: 2,
+    chunks: [
+      { id: "c1", page: 1, text: "Petitioner: Daniel Okonkwo. Beneficiary: Adaeze Okonkwo (spouse). Form: I-130 Petition for Alien Relative." },
+      { id: "c2", page: 1, text: "Petitioner DOB: handwritten, partially illegible — appears 1986-0?-22. Country of Birth: Nigeria." },
+      { id: "c3", page: 2, text: "Contact email smudged on scan: d.okonkwo@?????.com. Phone: (713) 555-0146." },
+    ],
+    extractions: [
+      { id: "e1", field: "Petitioner Name", value: "Daniel Okonkwo", confidence: 0.98, sourceChunkId: "c1", status: "auto" },
+      { id: "e2", field: "Application Type", value: "I-130", confidence: 0.97, sourceChunkId: "c1", status: "auto" },
+      { id: "e3", field: "Beneficiary", value: "Adaeze Okonkwo", confidence: 0.95, sourceChunkId: "c1", status: "auto" },
+      { id: "e4", field: "Date of Birth", value: "1986-0?-22", confidence: 0.42, sourceChunkId: "c2", status: "auto", flag: "low confidence" },
+      { id: "e5", field: "Email", value: "d.okonkwo@?????.com", confidence: 0.38, sourceChunkId: "c3", status: "auto", flag: "missing info" },
+    ],
+    qa: [],
+  },
+  {
+    id: "doc-imm-003",
+    name: "Intake — Yuki Tanaka (O-1).pdf",
+    type: "Immigration Intake",
+    status: "ready",
+    owner: "demo",
+    createdAt: "2026-06-16T13:41:00Z",
+    pages: 2,
+    chunks: [
+      { id: "c1", page: 1, text: "Full Name: Yuki Tanaka. Date of Birth: 1989-09-30. Country of Birth: Japan. Field of extraordinary ability: machine learning research." },
+      { id: "c2", page: 1, text: "Application Type: O-1A. Sponsoring employer: Northwind Robotics. Email: yuki.tanaka@example.com. Phone: (206) 555-0112." },
+    ],
+    extractions: [
+      { id: "e1", field: "Full Name", value: "Yuki Tanaka", confidence: 0.99, sourceChunkId: "c1", status: "approved" },
+      { id: "e2", field: "Application Type", value: "O-1A", confidence: 0.94, sourceChunkId: "c2", status: "auto" },
+      { id: "e3", field: "Sponsoring Employer", value: "Northwind Robotics", confidence: 0.9, sourceChunkId: "c2", status: "auto" },
+      { id: "e4", field: "Email", value: "yuki.tanaka@example.com", confidence: 0.98, sourceChunkId: "c2", status: "auto" },
+    ],
+    qa: [],
+  },
+  {
+    id: "doc-imm-004",
+    name: "Intake — Carlos Mendes (Asylum).pdf",
+    type: "Immigration Intake",
+    status: "needs_review",
+    owner: "demo",
+    createdAt: "2026-06-17T20:15:00Z",
+    pages: 4,
+    chunks: [
+      { id: "c1", page: 1, text: "Applicant: Carlos Mendes. Country of Birth: Brazil. Application Type: I-589 Application for Asylum." },
+      { id: "c2", page: 2, text: "Date of last entry: field left blank on the form. Manner of entry: not specified." },
+      { id: "c3", page: 3, text: "Basis for claim: political opinion. Narrative attached (8 pages, not included in this packet)." },
+    ],
+    extractions: [
+      { id: "e1", field: "Full Name", value: "Carlos Mendes", confidence: 0.97, sourceChunkId: "c1", status: "auto" },
+      { id: "e2", field: "Application Type", value: "I-589", confidence: 0.95, sourceChunkId: "c1", status: "auto" },
+      { id: "e3", field: "Date of Last Entry", value: "(not found)", confidence: 0.2, sourceChunkId: "c2", status: "auto", flag: "missing info" },
+      { id: "e4", field: "Basis for Claim", value: "Political opinion", confidence: 0.88, sourceChunkId: "c3", status: "auto" },
+    ],
+    qa: [],
+  },
+  {
+    id: "doc-cv-001",
+    name: "Résumé — Priya Nair (Sr. Backend).pdf",
+    type: "Résumé / CV",
+    status: "ready",
+    owner: "demo",
+    createdAt: "2026-06-15T11:05:00Z",
+    pages: 2,
+    chunks: [
+      { id: "c1", page: 1, text: "Priya Nair — Senior Backend Engineer. Email: priya.nair@example.com. Location: Austin, TX." },
+      { id: "c2", page: 1, text: "Experience: 9 years building distributed systems. Most recent: Staff Engineer at Lumen Data (2021–present), led a team of 6." },
+      { id: "c3", page: 1, text: "Skills: Go, PostgreSQL, Kafka, Kubernetes, gRPC, AWS. Education: B.Tech Computer Science, IIT Madras, 2015." },
+    ],
+    extractions: [
+      { id: "e1", field: "Candidate Name", value: "Priya Nair", confidence: 0.99, sourceChunkId: "c1", status: "auto" },
+      { id: "e2", field: "Current Title", value: "Staff Engineer, Lumen Data", confidence: 0.93, sourceChunkId: "c2", status: "auto" },
+      { id: "e3", field: "Years Experience", value: "9", confidence: 0.9, sourceChunkId: "c2", status: "auto" },
+      { id: "e4", field: "Top Skills", value: "Go, PostgreSQL, Kafka, Kubernetes", confidence: 0.87, sourceChunkId: "c3", status: "auto" },
+      { id: "e5", field: "Email", value: "priya.nair@example.com", confidence: 0.99, sourceChunkId: "c1", status: "auto" },
+    ],
+    qa: [
+      { id: "q1", question: "How many years of experience does the candidate have?", answer: "Priya Nair has 9 years of experience building distributed systems, most recently as Staff Engineer at Lumen Data.", citations: ["c2"], confidence: 0.92 },
+    ],
+  },
+  {
+    id: "doc-cv-002",
+    name: "Résumé — Tomás Rivera (Designer).pdf",
+    type: "Résumé / CV",
+    status: "ready",
+    owner: "demo",
+    createdAt: "2026-06-16T09:22:00Z",
+    pages: 1,
+    chunks: [
+      { id: "c1", page: 1, text: "Tomás Rivera — Product Designer. tomas.rivera@example.com. Portfolio: tomasrivera.example." },
+      { id: "c2", page: 1, text: "6 years designing B2B SaaS. Skills: Figma, design systems, user research, prototyping. Spanish & English." },
+    ],
+    extractions: [
+      { id: "e1", field: "Candidate Name", value: "Tomás Rivera", confidence: 0.98, sourceChunkId: "c1", status: "auto" },
+      { id: "e2", field: "Current Title", value: "Product Designer", confidence: 0.92, sourceChunkId: "c1", status: "auto" },
+      { id: "e3", field: "Years Experience", value: "6", confidence: 0.85, sourceChunkId: "c2", status: "auto" },
+      { id: "e4", field: "Top Skills", value: "Figma, design systems, user research", confidence: 0.83, sourceChunkId: "c2", status: "auto" },
+    ],
+    qa: [],
+  },
+  {
+    id: "doc-cv-003",
+    name: "Résumé — Grace Liu (PM).pdf",
+    type: "Résumé / CV",
+    status: "needs_review",
+    owner: "demo",
+    createdAt: "2026-06-17T16:48:00Z",
+    pages: 2,
+    chunks: [
+      { id: "c1", page: 1, text: "Grace Liu — Product Manager. Contact info on page 2 (cut off in scan)." },
+      { id: "c2", page: 1, text: "Experience listed in a two-column layout; years overlap and are hard to total automatically. Roles at three startups." },
+    ],
+    extractions: [
+      { id: "e1", field: "Candidate Name", value: "Grace Liu", confidence: 0.96, sourceChunkId: "c1", status: "auto" },
+      { id: "e2", field: "Current Title", value: "Product Manager", confidence: 0.91, sourceChunkId: "c1", status: "auto" },
+      { id: "e3", field: "Years Experience", value: "~7 (uncertain)", confidence: 0.49, sourceChunkId: "c2", status: "auto", flag: "low confidence" },
+      { id: "e4", field: "Email", value: "(not found)", confidence: 0.25, sourceChunkId: "c1", status: "auto", flag: "missing info" },
+    ],
+    qa: [],
+  },
+  {
+    id: "doc-cv-004",
+    name: "Résumé — Sam Patel (Data).pdf",
+    type: "Résumé / CV",
+    status: "ready",
+    owner: "demo",
+    createdAt: "2026-06-18T14:10:00Z",
+    pages: 1,
+    chunks: [
+      { id: "c1", page: 1, text: "Sam Patel — Data Scientist. sam.patel@example.com. Remote (EST)." },
+      { id: "c2", page: 1, text: "5 years in ML. Skills: Python, PyTorch, SQL, dbt, Airflow. MS Statistics, University of Michigan." },
+    ],
+    extractions: [
+      { id: "e1", field: "Candidate Name", value: "Sam Patel", confidence: 0.99, sourceChunkId: "c1", status: "auto" },
+      { id: "e2", field: "Current Title", value: "Data Scientist", confidence: 0.94, sourceChunkId: "c1", status: "auto" },
+      { id: "e3", field: "Years Experience", value: "5", confidence: 0.88, sourceChunkId: "c2", status: "auto" },
+      { id: "e4", field: "Top Skills", value: "Python, PyTorch, SQL, Airflow", confidence: 0.86, sourceChunkId: "c2", status: "auto" },
+      { id: "e5", field: "Email", value: "sam.patel@example.com", confidence: 0.99, sourceChunkId: "c1", status: "auto" },
+    ],
+    qa: [],
+  },
+];
+
+export const SEED_REVIEWS: ReviewEntry[] = [
+  { id: "r1", docId: "doc-imm-003", extractionId: "e1", field: "Full Name", reviewer: "demo", action: "approved", before: "Yuki Tanaka", after: "Yuki Tanaka", at: "2026-06-16T14:02:00Z" },
+];
